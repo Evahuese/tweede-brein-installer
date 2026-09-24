@@ -177,6 +177,10 @@ case "$MODE" in
     fi
     toon_versie "$MAP"
     bewijs_grendel "$MAP"
+    # AGENTS.md gelijk houden met CLAUDE.md, zonder de uitlegregel bovenaan te verliezen
+    if [ -f "$MAP/CLAUDE.md" ] && [ -f "$MAP/AGENTS.md" ]; then
+      { sed -n '1,/^-->$/p' "$MAP/AGENTS.md"; echo; cat "$MAP/CLAUDE.md"; } > "$MAP/AGENTS.md.nieuw" && mv "$MAP/AGENTS.md.nieuw" "$MAP/AGENTS.md" && ok "AGENTS.md gelijkgetrokken met CLAUDE.md"
+    fi
     ;;
 
   gmail)

@@ -4,6 +4,7 @@
 #   bash installeer.sh install <repo> [doelmap]   de map ophalen en alles klaarzetten
 #   bash installeer.sh update                     de nieuwste versie ophalen, en de grendel opnieuw bewijzen
 #   bash installeer.sh gmail <kenmerk>            het Gmail-kenmerk invullen in .claude/settings.json
+#   bash installeer.sh eigen-adres <adres>        haar eigen adres invullen voor de wekelijkse mail
 #   bash installeer.sh check                      alleen kijken wat er op deze Mac staat
 #
 # Op een verse Mac, zonder iets te installeren:
@@ -17,7 +18,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSIE="2026.09.24"
+SCRIPT_VERSIE="2026.10.12"
 MODE="${1:-help}"
 
 zeg()  { printf '\n\033[1m%s\033[0m\n' "$1"; }
@@ -126,7 +127,7 @@ toon_versie() {
   ok "opslagpunt: $(cd "$map" && git rev-parse --short HEAD)"
 }
 
-# ---------- de vier standen ----------
+# ---------- de standen ----------
 
 case "$MODE" in
   check)
@@ -194,7 +195,31 @@ case "$MODE" in
     (cd "$MAP" && git add .claude/settings.json && git commit --quiet -m "Gmail-kenmerk ingevuld" 2>/dev/null) || true
     ;;
 
+  eigen-adres)
+    ADRES="${2:-}"; MAP="$(cd "$(dirname "$0")" && pwd)"
+    [ -n "$ADRES" ] || stop "Geef haar eigen adres mee: bash installeer.sh eigen-adres <adres>"
+    [ -f "$MAP/.claude/grendel-eigen-adres.json" ] || stop "Geen .claude/grendel-eigen-adres.json gevonden. Draai dit vanuit haar tweede brein."
+    zeg "Haar eigen adres invullen"
+    python3 - "$MAP/.claude/grendel-eigen-adres.json" "$ADRES" <<'PY'
+import json, pathlib, re, sys
+pad = pathlib.Path(sys.argv[1])
+adres = sys.argv[2].strip()
+if not re.fullmatch(r"[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+", adres):
+    sys.exit("  STOP    Geef precies één mailadres mee, zonder naam of tweede adres.")
+try:
+    instelling = json.loads(pad.read_text(encoding="utf-8"))
+except (OSError, ValueError):
+    sys.exit("  STOP    De instelling voor haar eigen adres is onleesbaar.")
+if not isinstance(instelling, dict) or not instelling.get("onderwerp_begint_met"):
+    sys.exit("  STOP    Het vaste onderwerpvoorvoegsel ontbreekt.")
+instelling["adres"] = adres
+pad.write_text(json.dumps(instelling, ensure_ascii=False) + "\n", encoding="utf-8")
+PY
+    ok "haar eigen adres ingevuld voor de wekelijkse mail"
+    (cd "$MAP" && git add .claude/grendel-eigen-adres.json && git commit --quiet -m "Eigen adres ingevuld" 2>/dev/null) || true
+    ;;
+
   *)
-    sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
     ;;
 esac

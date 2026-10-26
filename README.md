@@ -21,3 +21,7 @@ bash ~/tweede-brein/installeer.sh gmail <kenmerk>
 ```
 
 Alleen voor macOS. Het script zegt wat het doet en stopt bij de eerste fout.
+
+## Windows
+
+`zet-klaar.ps1` zet het tweede brein neer op Windows, voor de ChatGPT-app (Work). Eén regel in PowerShell, zie de kop van het script.

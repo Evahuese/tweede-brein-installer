@@ -20,7 +20,7 @@ bash ~/tweede-brein/installeer.sh check      wat staat er op deze Mac
 bash ~/tweede-brein/installeer.sh gmail <kenmerk>
 ```
 
-Alleen voor macOS. Het script zegt wat het doet en stopt bij de eerste fout.
+installeer.sh is alleen voor macOS. Het script zegt wat het doet en stopt bij de eerste fout.
 
 ## Windows
 

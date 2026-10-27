@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSIE="2026.10.12"
+SCRIPT_VERSIE="2026.10.27"
 MODE="${1:-help}"
 
 zeg()  { printf '\n\033[1m%s\033[0m\n' "$1"; }
@@ -86,6 +86,41 @@ haal_map() {
   ok "staat op $doel"
 }
 
+# Aan het eind van een sessie zet de assistent haar wijzigingen weg op GitHub. Git wil dan weten
+# op wiens naam een wijziging staat. Staat er nog niets, dan gebruiken we haar GitHub-naam,
+# alleen voor deze map.
+naam_voor_git() {
+  local map="$1" naam
+  zeg "Een naam voor de back-up"
+  naam="$(cd "$map" && git config user.name || true)"
+  if [ -n "$naam" ]; then ok "staat al: $naam"; return; fi
+  naam="$(gh api user -q .login 2>/dev/null || true)"
+  [ -n "$naam" ] || naam="${REPO%%/*}"
+  [ -n "$naam" ] || naam="eigenaar"
+  (cd "$map" && git config user.name "$naam" && git config user.email "$naam@users.noreply.github.com")
+  ok "ingesteld: $naam"
+}
+
+# ChatGPT en Codex zoeken skills in .agents/skills, Claude in .claude/skills. De bron is
+# .claude/skills. Dit zet een gelijke kopie in .agents/skills, zonder de gestopte.
+skills_gelijk() {
+  local map="$1" d naam
+  [ -d "$map/.claude/skills" ] || return 0
+  mkdir -p "$map/.agents/skills"
+  # Een werkwijze die zij in ChatGPT maakte, staat soms alleen in .agents/skills. Eerst terug naar de bron.
+  for d in "$map/.agents/skills"/*/; do
+    [ -d "$d" ] || continue
+    naam="$(basename "$d")"
+    [ -e "$map/.claude/skills/$naam" ] || [ -e "$map/.claude/skills/gestopt/$naam" ] || cp -R "$d" "$map/.claude/skills/$naam"
+  done
+  rsync -a --exclude gestopt --exclude .DS_Store "$map/.claude/skills/" "$map/.agents/skills/"
+  # Wat gestopt is, gaat ook uit .agents/skills, anders blijft ChatGPT hem gebruiken
+  for d in "$map/.claude/skills/gestopt"/*/; do
+    [ -d "$d" ] && rm -rf "$map/.agents/skills/$(basename "$d")"
+  done
+  ok "skills gelijk in .claude/skills en .agents/skills"
+}
+
 # ---------- 3. bewijzen en vastleggen ----------
 
 bewijs_grendel() {
@@ -141,6 +176,8 @@ case "$MODE" in
     ONTBREEKT=0; check_gereedschap
     [ "$ONTBREEKT" = 1 ] && installeer_gereedschap
     haal_map "$REPO" "$DOEL"
+    naam_voor_git "$DOEL"
+    skills_gelijk "$DOEL"
     toon_versie "$DOEL"
     schrijf_versie_in_logboek "$DOEL"
     bewijs_grendel "$DOEL"
@@ -182,6 +219,8 @@ case "$MODE" in
     if [ -f "$MAP/CLAUDE.md" ] && [ -f "$MAP/AGENTS.md" ]; then
       { sed -n '1,/^-->$/p' "$MAP/AGENTS.md"; echo; cat "$MAP/CLAUDE.md"; } > "$MAP/AGENTS.md.nieuw" && mv "$MAP/AGENTS.md.nieuw" "$MAP/AGENTS.md" && ok "AGENTS.md gelijkgetrokken met CLAUDE.md"
     fi
+    skills_gelijk "$MAP"
+    naam_voor_git "$MAP"
     ;;
 
   gmail)

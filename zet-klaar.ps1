@@ -9,8 +9,9 @@
 #   2. De ChatGPT-app installeren uit de Microsoft Store als die er nog niet staat
 #   3. De map ophalen van GitHub naar <gebruikersmap>\tweede-brein (of bijwerken als hij er al is).
 #      Bij de eerste keer opent Windows een browservenster om in te loggen bij GitHub
-#   4. Controleren of AGENTS.md en de skills in .agents\skills er staan
-#   5. Het pad van de map kopieren en de ChatGPT-app openen
+#   4. Een naam voor Git instellen in de map, zodat de back-up naar GitHub werkt
+#   5. Controleren of AGENTS.md en de skills in .agents\skills er staan
+#   6. Het pad van de map kopieren en de ChatGPT-app openen
 #
 # Dit script is bewust dom, net als installeer.sh: het zegt wat het doet en stopt bij de eerste
 # fout. Het verandert geen Windows-instellingen. Voor een Mac is er installeer.sh.
@@ -21,7 +22,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$SCRIPT_VERSIE = '2026.10.26'
+$SCRIPT_VERSIE = '2026.10.27'
 
 function Zeg($tekst)  { Write-Host ''; Write-Host $tekst -ForegroundColor White }
 function Ok($tekst)   { Write-Host "  ok      $tekst" -ForegroundColor Green }
@@ -100,7 +101,23 @@ if (Test-Path (Join-Path $Doel '.git')) {
   Ok 'opgehaald'
 }
 
-# ---------- 4. controle ----------
+# ---------- 4. een naam voor Git ----------
+
+# Aan het eind van een sessie zet de assistent haar wijzigingen weg op GitHub. Git wil dan weten
+# op wiens naam een wijziging staat. Staat er nog niets, dan gebruiken we haar GitHub-naam,
+# alleen voor deze map.
+Zeg 'Een naam voor de back-up'
+$naam = git -C $Doel config user.name
+if ($naam) {
+  Ok "staat al: $naam"
+} else {
+  $eigenaar = $Repo.Split('/')[0]
+  git -C $Doel config user.name $eigenaar
+  git -C $Doel config user.email "$eigenaar@users.noreply.github.com"
+  Ok "ingesteld: $eigenaar"
+}
+
+# ---------- 5. controle ----------
 
 Zeg 'Controle'
 if (-not (Test-Path (Join-Path $Doel 'AGENTS.md'))) { Stop-Hier 'AGENTS.md ontbreekt in de map. Dat moet Eva rechtzetten.' }
@@ -109,7 +126,7 @@ $skills = @(Get-ChildItem -Path (Join-Path $Doel '.agents\skills') -Filter 'SKIL
 if ($skills.Count -eq 0) { Stop-Hier 'Er staan geen skills in .agents\skills. Dat moet Eva rechtzetten.' }
 Ok "$($skills.Count) skills in .agents\skills"
 
-# ---------- 5. openen ----------
+# ---------- 6. openen ----------
 
 Zeg 'Klaar'
 Set-Clipboard -Value $Doel

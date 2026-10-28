@@ -5,7 +5,7 @@
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Evahuese/tweede-brein-installer/main/zet-klaar.ps1))) -Repo <naam>/<repo>
 #
 # Wat het doet, in vaste volgorde:
-#   1. Git installeren als het er nog niet staat
+#   1. Git installeren als het er nog niet staat, en Python voor de systeemcheck
 #   2. De ChatGPT-app installeren uit de Microsoft Store als die er nog niet staat
 #   3. De map ophalen van GitHub naar <gebruikersmap>\tweede-brein (of bijwerken als hij er al is).
 #      Bij de eerste keer opent Windows een browservenster om in te loggen bij GitHub
@@ -22,7 +22,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$SCRIPT_VERSIE = '2026.10.27'
+$SCRIPT_VERSIE = '2026.10.28'
 
 function Zeg($tekst)  { Write-Host ''; Write-Host $tekst -ForegroundColor White }
 function Ok($tekst)   { Write-Host "  ok      $tekst" -ForegroundColor Green }
@@ -69,6 +69,26 @@ if (Heeft git) {
   Ververs-Pad
   if (-not (Heeft git)) { Stop-Hier 'Git is geinstalleerd, maar dit venster vindt het niet. Sluit PowerShell, open hem opnieuw en plak de regel nog een keer.' }
   Ok (git --version)
+}
+
+# ---------- 1b. Python, voor de systeemcheck ----------
+
+# De systeemcheck toetst zijn verslag met een klein Python-script. Lukt de installatie niet, dan
+# gaat het script gewoon door: de rest werkt zonder Python, alleen het verslag is dan niet getoetst.
+Zeg 'Python, voor de systeemcheck'
+$heeftPython = $false
+if (Heeft py) { py -3 --version *> $null; if ($LASTEXITCODE -eq 0) { $heeftPython = $true } }
+if ($heeftPython) {
+  Ok (py -3 --version)
+} else {
+  Doe 'Python installeren (een paar minuten)'
+  winget install --id Python.Python.3.12 -e --source winget --silent --accept-package-agreements --accept-source-agreements
+  Ververs-Pad
+  if ((Heeft py) -and ($LASTEXITCODE -eq 0)) {
+    Ok 'geinstalleerd'
+  } else {
+    Write-Host '  LET OP  Python is niet gelukt. Alles werkt, alleen de systeemcheck kan zijn verslag niet toetsen.' -ForegroundColor Yellow
+  }
 }
 
 # ---------- 2. de ChatGPT-app ----------

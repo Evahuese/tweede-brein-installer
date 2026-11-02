@@ -121,6 +121,17 @@ skills_gelijk() {
   ok "skills gelijk in .claude/skills en .agents/skills"
 }
 
+# ChatGPT en Codex lezen per map alleen AGENTS.md. De regels per afdeling staan in CLAUDE.md.
+# Dit zet naast elke CLAUDE.md in een afdeling een gelijke AGENTS.md.
+afdelingen_gelijk() {
+  local map="$1" f
+  for f in "$map"/*/CLAUDE.md; do
+    [ -f "$f" ] || continue
+    cp "$f" "$(dirname "$f")/AGENTS.md"
+  done
+  ok "regels per afdeling ook als AGENTS.md, voor ChatGPT en Codex"
+}
+
 # ---------- 3. bewijzen en vastleggen ----------
 
 bewijs_grendel() {
@@ -178,6 +189,7 @@ case "$MODE" in
     haal_map "$REPO" "$DOEL"
     naam_voor_git "$DOEL"
     skills_gelijk "$DOEL"
+    afdelingen_gelijk "$DOEL"
     toon_versie "$DOEL"
     schrijf_versie_in_logboek "$DOEL"
     bewijs_grendel "$DOEL"
@@ -220,6 +232,7 @@ case "$MODE" in
       { sed -n '1,/^-->$/p' "$MAP/AGENTS.md"; echo; cat "$MAP/CLAUDE.md"; } > "$MAP/AGENTS.md.nieuw" && mv "$MAP/AGENTS.md.nieuw" "$MAP/AGENTS.md" && ok "AGENTS.md gelijkgetrokken met CLAUDE.md"
     fi
     skills_gelijk "$MAP"
+    afdelingen_gelijk "$MAP"
     naam_voor_git "$MAP"
     ;;
 

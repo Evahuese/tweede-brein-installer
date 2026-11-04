@@ -151,7 +151,8 @@ Ok "$($skills.Count) skills in .agents\skills"
 Zeg 'Klaar'
 Set-Clipboard -Value $Doel
 Start-Process "shell:AppsFolder\$((ChatGPT-App).AppID)"
-Write-Host "  Het pad $Doel staat op je klembord en ChatGPT gaat open."
+Start-Process explorer.exe $Doel
+Write-Host "  Het pad $Doel staat op je klembord. Je map en ChatGPT gaan open."
 Write-Host '  Daar: kies Work, open een nieuw project, plak het pad (Ctrl+V)'
 Write-Host '  en zet de stand onder het invoerveld op "Vragen om goedkeuring".'
 Write-Host ''

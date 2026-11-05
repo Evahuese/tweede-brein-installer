@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSIE="2026.10.27"
+SCRIPT_VERSIE="2026.11.05"
 MODE="${1:-help}"
 
 zeg()  { printf '\n\033[1m%s\033[0m\n' "$1"; }
@@ -229,7 +229,12 @@ case "$MODE" in
     bewijs_grendel "$MAP"
     # AGENTS.md gelijk houden met CLAUDE.md, zonder de uitlegregel bovenaan te verliezen
     if [ -f "$MAP/CLAUDE.md" ] && [ -f "$MAP/AGENTS.md" ]; then
-      { sed -n '1,/^-->$/p' "$MAP/AGENTS.md"; echo; cat "$MAP/CLAUDE.md"; } > "$MAP/AGENTS.md.nieuw" && mv "$MAP/AGENTS.md.nieuw" "$MAP/AGENTS.md" && ok "AGENTS.md gelijkgetrokken met CLAUDE.md"
+      # De uitlegregel is het blok <!-- ... --> bovenaan. Het slot staat aan het eind van een
+      # regel, niet op een eigen regel. Zonder dat blok bovenaan nemen we niets over, anders
+      # komt het hele oude bestand mee en wordt AGENTS.md bij elke update dubbel.
+      kop=""
+      head -1 "$MAP/AGENTS.md" | grep -q '^<!--' && kop="$(sed -n '1,/-->$/p' "$MAP/AGENTS.md")"
+      { [ -n "$kop" ] && printf '%s\n\n' "$kop"; cat "$MAP/CLAUDE.md"; } > "$MAP/AGENTS.md.nieuw" && mv "$MAP/AGENTS.md.nieuw" "$MAP/AGENTS.md" && ok "AGENTS.md gelijkgetrokken met CLAUDE.md"
     fi
     skills_gelijk "$MAP"
     afdelingen_gelijk "$MAP"
